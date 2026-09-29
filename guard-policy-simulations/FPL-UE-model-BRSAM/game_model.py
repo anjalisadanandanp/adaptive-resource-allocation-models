@@ -1591,8 +1591,10 @@ def optimise_strategy(model_params, experiment_name, output_folder, NUM_LANDSCAP
 
     #------------create a vector of random numbers for reward and penalty------------#
     # np.random.seed(42)  
-    reward = np.random.uniform(0.0, 0.05, size=NUM_LANDSCAPE_CELLS)
-    penalty = np.random.uniform(-0.05, 0.0, size=NUM_LANDSCAPE_CELLS)
+    # reward = np.random.uniform(0.0, 0.05, size=NUM_LANDSCAPE_CELLS)
+    reward = np.zeros(NUM_LANDSCAPE_CELLS)  # no prior information (r_hat_1 = 0)
+    # penalty = np.random.uniform(-0.05, 0.0, size=NUM_LANDSCAPE_CELLS)
+    penalty = np.zeros(NUM_LANDSCAPE_CELLS)
 
     #create a dataframe with boundary_patch_id, reward and penalty columns
     targets_df = pd.DataFrame({
