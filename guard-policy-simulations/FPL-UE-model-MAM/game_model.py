@@ -1,4 +1,5 @@
 import os
+import json
 from osgeo import gdal
 import numpy as np
 import matplotlib.pyplot as plt
@@ -1473,6 +1474,19 @@ def clip_raster_by_latlon_extent(input_file, output_folder, latlon_extent):
 
     return np.unique(raster_data)
 
+def log_step_metrics(step, crop_raid_loss, gamma, defender_strategy, attacker_strategy, best_hindsight_strategy):
+    """Append one row per game step to <OUTPUT_FOLDER>/step_metrics.csv (read by report_results.py)."""
+    row = pd.DataFrame([{
+        "step": step,
+        "crop_raid_loss_kg": crop_raid_loss,
+        "gamma": gamma,
+        "defender_strategy": json.dumps([int(x) for x in defender_strategy]),
+        "attacker_strategy": json.dumps([int(x) for x in attacker_strategy]),
+        "best_hindsight_strategy": json.dumps([int(x) for x in best_hindsight_strategy]),
+    }])
+    path = os.path.join(OUTPUT_FOLDER, "step_metrics.csv")
+    row.to_csv(path, mode="a", header=not os.path.exists(path), index=False)
+
 def run_single_play(model_params, experiment_name, output_folder, MAX_GAME_STEPS, NUM_LANDSCAPE_CELLS, BUDGET_K, M, eta, targets_df, NUM_STRATEGIC_TRAJECTORIES):
 
 
@@ -1570,6 +1584,7 @@ def run_single_play(model_params, experiment_name, output_folder, MAX_GAME_STEPS
         print("step utility for defender:", step_utility_defender(attacker_strategy_i, defender_strategy_i, targets_df))
 
         STEP_DAMAGES.append(step_penalty)
+        log_step_metrics(i, step_penalty, gamma, defender_strategy_i, attacker_strategy_i, best_defender_strategy_t)
         
         # gamma = step_penalty/(MAX_STEP_CROP_RAIDING_VAL + 1)
 
