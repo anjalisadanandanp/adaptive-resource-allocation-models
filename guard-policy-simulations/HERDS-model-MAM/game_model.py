@@ -1803,9 +1803,9 @@ if __name__ == "__main__":
                     "fitness_threshold": 0.4,
                     "terrain_radius": 750,
                     "slope_tolerance": 30,
-                    "num_processes": 5,
-                    "iterations": 5,
-                    "max_time_steps": 288 * 10,
+                    "num_processes": 8,
+                    "iterations": 8,
+                    "max_time_steps": 288 * 30,
                     "aggression_threshold_enter_cropland": 1.0,
                     "human_habituation_tolerance": 1.0,
                     "elephant_agent_visibility_radius": 500,
@@ -1824,7 +1824,7 @@ if __name__ == "__main__":
                     "num_protected_targets": k
                 }
             
-            NUM_STRATEGIC_TRAJECTORIES = 5
+            NUM_STRATEGIC_TRAJECTORIES = 128
 
             experiment_name = "mitigation-measures-within-plantations"
 

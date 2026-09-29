@@ -1713,7 +1713,7 @@ if __name__ == "__main__":
         for k in num_resources_k: 
 
             BUDGET_K = k                   # Maximum number of cells that can be protected by the defenders at every time-step
-            MAX_GAME_STEPS = 100                        # Maximum number of time-steps in the game
+            MAX_GAME_STEPS = 10                        # Maximum number of time-steps in the game
             eta = 0.5                                   # reward perturbation parameter
             M = 8                                      # parameter in the GR algorithm
 
@@ -1751,9 +1751,9 @@ if __name__ == "__main__":
                     "fitness_threshold": 0.4,
                     "terrain_radius": 750,
                     "slope_tolerance": 30,
-                    "num_processes": 4,
-                    "iterations": 4,
-                    "max_time_steps": 288 * 10,
+                    "num_processes": 8,
+                    "iterations": 8,
+                    "max_time_steps": 288 * 30,
                     "aggression_threshold_enter_cropland": 1.0,
                     "human_habituation_tolerance": 1.0,
                     "elephant_agent_visibility_radius": 500,
@@ -1773,7 +1773,7 @@ if __name__ == "__main__":
                     "boundary_raster_discretisation": boundary_raster_discretised
                 }
             
-            NUM_STRATEGIC_TRAJECTORIES = 5
+            NUM_STRATEGIC_TRAJECTORIES = 128
 
             experiment_name = "mitigation-measures-within-plantations"
 
