@@ -843,10 +843,14 @@ def update_targets_df(output_folder, targets_df, current_game_step, MAX_STEP_CRO
     else:
         penalty_normalizer = 0.0
 
+    uncovered_targets = [p for p in potential_targets if p != 0 and p not in df_dict_of_attacked_targets["target"].values]
+    num_uncovered_targets = max(len(uncovered_targets), 1)
+
     for boundary_patch in potential_targets:
         if boundary_patch not in df_dict_of_attacked_targets["target"].values and boundary_patch != 0:
 
-            penalty = -(total_crop_raid_loss * penalty_normalizer) * 0.5
+            # total loss is shared evenly among all uncovered targets (entry point is unidentifiable)
+            penalty = -(total_crop_raid_loss * penalty_normalizer) * 0.5 / num_uncovered_targets
 
             targets_df.loc[targets_df["boundary_patch_id"] == boundary_patch, "penalty"] = penalty
             print("boundary_patch:", boundary_patch, "normalized penalty:", penalty)
@@ -1118,8 +1122,6 @@ def select_defender_strategy(
         z = np.random.exponential(scale=1/eta, size=n)
         perturbed_reward = estimated_reward + z
 
-        perturbed_reward = estimated_reward
-
         v_t = find_best_strategy_parallel(defender_strategies, perturbed_reward)
 
     return v_t
@@ -1217,25 +1219,25 @@ def step_utility_defender(attacker_strategy_i, defender_strategy_i, targets_df):
 
     return reward_01 + reward_02
 
-def calculate_reward_for_strategy_best(defender_strategy, attacker_strategy_history, targets_df):
+def calculate_reward_for_strategy_best(defender_strategy, attacker_strategy_history, targets_df_history):
 
     v = np.array(defender_strategy)
     
     total_strategy_utility = 0
-    for attacker_strategy in attacker_strategy_history:
+    for attacker_strategy, targets_df in zip(attacker_strategy_history, targets_df_history):
         step_utility = step_utility_defender(attacker_strategy, v, targets_df)
         total_strategy_utility += step_utility
     
     return total_strategy_utility, v
     
-def calculate_best_strategy(defender_strategies, attacker_strategy_history, targets_df, n_processes=16):
+def calculate_best_strategy(defender_strategies, attacker_strategy_history, targets_df_history, n_processes=16):
 
 
 
     process_func = partial(
         calculate_reward_for_strategy_best,
         attacker_strategy_history=attacker_strategy_history,
-        targets_df=targets_df
+        targets_df_history=targets_df_history
     )
     
     max_reward = float('-inf')
@@ -1372,9 +1374,9 @@ def PLOT_CROP_DAMAGE(STEP_DAMAGES):
 
     return
 
-def calculate_defender_regret(defender_strategy_history, attacker_strategy_history, best_hindsight_strategy, targets_df):
+def calculate_defender_regret(defender_strategy_history, attacker_strategy_history, best_hindsight_strategy, targets_df_history):
     
-    assert len(defender_strategy_history) == len(attacker_strategy_history)
+    assert len(defender_strategy_history) == len(attacker_strategy_history) == len(targets_df_history)
     max_steps = len(defender_strategy_history)
 
     regret_i_hindsight = 0
@@ -1383,6 +1385,7 @@ def calculate_defender_regret(defender_strategy_history, attacker_strategy_histo
     for step in range(max_steps):
         attacker_strategy_i = attacker_strategy_history[step]
         defender_strategy_i = defender_strategy_history[step]
+        targets_df = targets_df_history[step]
 
         r = (targets_df['reward'] - targets_df['penalty']).values
         r_t = [a * b for a, b in zip(attacker_strategy_i, r)]
@@ -1392,6 +1395,7 @@ def calculate_defender_regret(defender_strategy_history, attacker_strategy_histo
     for step in range(max_steps):
         attacker_strategy_i = attacker_strategy_history[step]
         defender_strategy_i = defender_strategy_history[step]
+        targets_df = targets_df_history[step]
 
         r = (targets_df['reward'] - targets_df['penalty']).values
         r_t = [a * b for a, b in zip(attacker_strategy_i, r)]
@@ -1483,6 +1487,7 @@ def run_single_play(model_params, experiment_name, output_folder, MAX_GAME_STEPS
 
     defender_strategy_history = []
     attacker_strategy_history = []
+    targets_df_history = []
 
     STEP_DAMAGES = []
 
@@ -1545,6 +1550,8 @@ def run_single_play(model_params, experiment_name, output_folder, MAX_GAME_STEPS
         print("MAX_STEP_CROP_RAIDING_VAL: ", MAX_STEP_CROP_RAIDING_VAL)
         print("MAX_STEP_TRAJECTORIES_ENCOUNTERED: ", MAX_STEP_TRAJECTORIES_ENCOUNTERED)
 
+        targets_df_history.append(targets_df.copy())
+
         K = GR_algorithm(defender_strategies, eta, gamma, M, estimated_reward, NUM_LANDSCAPE_CELLS, BUDGET_K)
 
         estimated_reward = update_estimated_reward(estimated_reward, K, attacker_strategy_i, defender_strategy_i, targets_df)
@@ -1556,7 +1563,7 @@ def run_single_play(model_params, experiment_name, output_folder, MAX_GAME_STEPS
 
 
 
-        best_defender_strategy_t = calculate_best_strategy(defender_strategies, attacker_strategy_history, targets_df)
+        best_defender_strategy_t = calculate_best_strategy(defender_strategies, attacker_strategy_history, targets_df_history)
 
         print("Best defender strategy:", best_defender_strategy_t)
 
@@ -1682,9 +1689,9 @@ if __name__ == "__main__":
         for k in num_resources_k: 
 
             BUDGET_K = k                   # Maximum number of cells that can be protected by the defenders at every time-step
-            MAX_GAME_STEPS = 7                        # Maximum number of time-steps in the game
-            eta = 10                                   # reward perturbation parameter
-            M = 7                                      # parameter in the GR algorithm
+            MAX_GAME_STEPS = 100                        # Maximum number of time-steps in the game
+            eta = 0.5                                   # reward perturbation parameter
+            M = 8                                      # parameter in the GR algorithm
 
             FPL_UE_params = (
                 "budget_k_"
@@ -1720,9 +1727,9 @@ if __name__ == "__main__":
                     "fitness_threshold": 0.4,
                     "terrain_radius": 750,
                     "slope_tolerance": 30,
-                    "num_processes": 5,
-                    "iterations": 5,
-                    "max_time_steps": 288 * 10,
+                    "num_processes": 4,
+                    "iterations": 4,
+                    "max_time_steps": 288 * 30,
                     "aggression_threshold_enter_cropland": 1.0,
                     "human_habituation_tolerance": 1.0,
                     "elephant_agent_visibility_radius": 500,

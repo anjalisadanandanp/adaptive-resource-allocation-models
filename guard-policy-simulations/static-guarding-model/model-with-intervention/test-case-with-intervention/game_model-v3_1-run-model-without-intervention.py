@@ -1021,5 +1021,5 @@ if __name__ == "__main__":
         experiment_name=experiment_name,
         output_folder=output_folder,
         NUM_STRATEGIC_TRAJECTORIES=NUM_STRATEGIC_TRAJECTORIES,
-        NUM_GAME_STEPS = 1
+        NUM_GAME_STEPS = 100
     )
