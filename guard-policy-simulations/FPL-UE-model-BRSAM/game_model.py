@@ -1474,12 +1474,14 @@ def clip_raster_by_latlon_extent(input_file, output_folder, latlon_extent):
 
     return np.unique(raster_data)
 
-def log_step_metrics(step, crop_raid_loss, gamma, defender_strategy, attacker_strategy, best_hindsight_strategy):
+def log_step_metrics(step, crop_raid_loss, gamma, average_regret, defender_strategy, attacker_strategy, best_hindsight_strategy):
     """Append one row per game step to <OUTPUT_FOLDER>/step_metrics.csv (read by report_results.py)."""
     row = pd.DataFrame([{
         "step": step,
         "crop_raid_loss_kg": crop_raid_loss,
         "gamma": gamma,
+        "average_regret": average_regret,
+        "cumulative_regret": average_regret * step,
         "defender_strategy": json.dumps([int(x) for x in defender_strategy]),
         "attacker_strategy": json.dumps([int(x) for x in attacker_strategy]),
         "best_hindsight_strategy": json.dumps([int(x) for x in best_hindsight_strategy]),
@@ -1588,7 +1590,7 @@ def run_single_play(model_params, experiment_name, output_folder, MAX_GAME_STEPS
         print("step utility for defender:", step_utility_defender(attacker_strategy_i, defender_strategy_i, targets_df))
 
         STEP_DAMAGES.append(step_penalty)
-        log_step_metrics(i, step_penalty, gamma, defender_strategy_i, attacker_strategy_i, best_defender_strategy_t)
+        log_step_metrics(i, step_penalty, gamma, DEFENDER_REGRET_VALUES[-1], defender_strategy_i, attacker_strategy_i, best_defender_strategy_t)
         
         # gamma = step_penalty/(MAX_STEP_CROP_RAIDING_VAL + 1)
 
@@ -1751,7 +1753,7 @@ if __name__ == "__main__":
                     "slope_tolerance": 30,
                     "num_processes": 4,
                     "iterations": 4,
-                    "max_time_steps": 288 * 30,
+                    "max_time_steps": 288 * 10,
                     "aggression_threshold_enter_cropland": 1.0,
                     "human_habituation_tolerance": 1.0,
                     "elephant_agent_visibility_radius": 500,
