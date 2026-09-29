@@ -1380,7 +1380,7 @@ def plot_defender_regret(defender_regret_values):
     steps = np.arange(1, len(regret_values) + 1)
     
     plt.figure(figsize=(6, 6))
-    plt.plot(steps, regret_values, 'b-', label='FPL-UE')
+    plt.plot(steps, regret_values, 'b-', label='HERDS')
     
     plt.xlabel('Step')
     plt.ylabel('Regret Value')
@@ -1547,6 +1547,7 @@ def run_single_play(model_params, experiment_name, output_folder, MAX_GAME_STEPS
     targets_df_history = []  # payoff table observed at each step
 
     STEP_DAMAGES = []
+    DEFENDER_REGRET_VALUES = []
 
     defender_strategies, TARGETS_TO_MONITOR = generate_defender_strategies(coverage_matrix_path, BUDGET_K, NUM_LANDSCAPE_CELLS, targets_df)
 
@@ -1629,6 +1630,9 @@ def run_single_play(model_params, experiment_name, output_folder, MAX_GAME_STEPS
 
         best_defender_strategy_t = calculate_best_strategy(defender_strategies, attacker_strategy_history, targets_df_history)
 
+        DEFENDER_REGRET_VALUES.append(calculate_defender_regret(defender_strategy_history, attacker_strategy_history, best_defender_strategy_t, targets_df_history))
+        print("average regret:", DEFENDER_REGRET_VALUES[-1])
+
         print("Best defender strategy:", best_defender_strategy_t)
 
         print("step utility for defender:", step_utility_defender(attacker_strategy_i, defender_strategy_i, targets_df))
@@ -1642,6 +1646,7 @@ def run_single_play(model_params, experiment_name, output_folder, MAX_GAME_STEPS
 
 
     PLOT_CROP_DAMAGE(STEP_DAMAGES)
+    plot_defender_regret(DEFENDER_REGRET_VALUES)
 
     return  
 
